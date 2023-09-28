@@ -189,6 +189,8 @@ class CarEnv(gym.Env):
         self.low_level_model = SAC.load("model.pkl", env=low_level_env)
         self.low_level_obs = low_level_env.reset()
 
+        self.car_dev_before = np.array([0, 0])
+
         pygame.init()
         self.screen = pygame.display.set_mode((self.road.road_length * 10, - self.road.road_width * 10))
         pygame.display.set_caption("Car Road Environment")
@@ -234,9 +236,17 @@ class CarEnv(gym.Env):
                   f"[pos: {round(self.car.carx, 2), round(self.car.cary, 2)}]")
 
         self.time += 0.01
+        self.car_dev_before = car_dev
+
         self.render()
 
         return state, reward, done, info
+
+    def make_trajectory(self, action):
+        pass
+
+    def make_lowlevel_obs(self):
+        pass
 
     def calculate_dev(self):
         arr = np.array(self.traj_data)

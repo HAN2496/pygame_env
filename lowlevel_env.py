@@ -255,19 +255,11 @@ class LowLevelEnv(gym.Env):
         distances = np.array(distances)
         result_points = []
 
-        min_idx = np.argmin(np.sum((self.traj_data - np.array([x, y])) ** 2, axis=1))
+        euclidean_distances = np.sqrt(np.sum((self.traj_data - np.array([x, y])) ** 2, axis=1))
 
         for dist in distances:
-            lookahead_idx = min_idx
-            total_distance = 0.0
-            while total_distance < dist and lookahead_idx + 1 < len(self.traj_data):
-                total_distance += np.linalg.norm(self.traj_data[lookahead_idx + 1] - self.traj_data[lookahead_idx])
-                lookahead_idx += 1
-
-            if lookahead_idx < len(self.traj_data):
-                result_points.append(self.traj_data[lookahead_idx])
-            else:
-                result_points.append(self.traj_data[-1])
+            idx = np.argmin(np.abs(euclidean_distances - dist))
+            result_points.append(self.traj_data[idx])
 
         return result_points
 
