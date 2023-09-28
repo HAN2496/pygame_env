@@ -255,10 +255,10 @@ class LowLevelEnv(gym.Env):
         distances = np.array(distances)
         result_points = []
 
-        euclidean_distances = np.sqrt(np.sum((self.traj_data - np.array([x, y])) ** 2, axis=1))
+        total_distances = np.sqrt(np.sum((self.traj_data - np.array([x, y])) ** 2, axis=1))
 
         for dist in distances:
-            idx = np.argmin(np.abs(euclidean_distances - dist))
+            idx = np.argmin(np.abs(total_distances - dist))
             result_points.append(self.traj_data[idx])
 
         return result_points
@@ -325,7 +325,7 @@ if __name__ == "__main__":
     print(f"dst: {devdist}, ang: {devAng}")
     """
     plot(env.road, env.car)
-    model = SAC("MlpPolicy", env, tensorboard_log=os.path.join(f"tensorboard/dlc"), verbose=1)
+    model = SAC("MlpPolicy", env, tensorboard_log=os.path.join(f"tensorboard"), verbose=1)
     try:
         model.learn(total_timesteps=10000 * 300)
     except KeyboardInterrupt:
