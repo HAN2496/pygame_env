@@ -184,7 +184,7 @@ class LowLevelEnv(gym.Env):
         self.action_space = spaces.Box(low=-1, high=1, shape=(env_action_num,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(env_obs_num,), dtype=np.float32)
 
-        self.traj_data = pd.read_csv(f"datasets_traj_dlc2.csv").loc[:, ["traj_tx", "traj_ty"]].values
+        self.traj_data = pd.read_csv(f"lowlevel_traj.csv").loc[:, ["traj_tx", "traj_ty"]].values
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.road.road_length * 10, - self.road.road_width * 10))
