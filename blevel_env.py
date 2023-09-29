@@ -9,6 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 from lowlevel_env import LowLevelEnv
+import math
 
 def plot(road, car):
     #plt.figure(figsize=(10, 5))
@@ -182,7 +183,7 @@ class CarEnv(gym.Env):
 
         env_action_num = 3
         env_obs_num = 14
-        self.action_space = spaces.Box(low=-1, high=1, shape=(env_action_num,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(env_action_num,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(env_obs_num,), dtype=np.float32)
 
         low_level_env = LowLevelEnv()
@@ -243,10 +244,19 @@ class CarEnv(gym.Env):
         return state, reward, done, info
 
     def make_trajectory(self, action):
-        pass
-
-    def make_lowlevel_obs(self):
-        pass
+        def rotate(x1, y1, angle):
+            x1 -= self.car.carx
+            y1 -= self.car.cary
+            x_new = x1 * math.cos(angle) - y1 * math.sin(angle)
+            y_new = x1 * math.sin(angle) + y1 * math.cos(angle)
+            x_new += self.car.carx
+            y_new += self.car.cary
+            return (x_new, y_new)
+        traj = []
+        for idx, angle in enumerate(action):
+            traj_before_rotate = np.array([self.car.carx + idx * 3, self.car.cary])
+            traj.append(rotate(traj_before_rotate[0], traj_before_rotate[1]))
+        return traj
 
     def calculate_dev(self):
         arr = np.array(self.traj_data)
