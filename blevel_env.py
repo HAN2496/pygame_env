@@ -212,18 +212,18 @@ class CarEnv(gym.Env):
     def step(self, action):
         done = False
         self.test_num += 1
+        car_dev = np.array([0, 0])
 
         # 기존 action : steering vel -> scalar
         # Policy b action : traj points -> array(list)
         # low_level_obs에 cary, carv 들어가고, car_dev랑 lookahead는 action(신규)에서 가져온 trj 정보로
-        
-        self.low_level_obs = action 
+
+        traj_abs = self.make_trajectory(action)
+        self.low_level_obs = np.concatenate((np.array([self.car.carv]), car_dev, traj_abs))
         steering_changes = model.predict(self.low_level_obs)
 
         self.car.move_car(steering_changes[0])
-        lookahead_arr = [3 * i for i in range(5)]
-        lookahead_traj_abs = self.find_lookahead_traj(self.car.carx, self.car.cary, lookahead_arr)
-        lookahead_traj_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, lookahead_traj_abs).flatten()
+        traj_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, traj_abs).flatten()
         car_dev = self.calculate_dev()
         state = np.concatenate((np.array([self.car.cary, self.car.carv]))) # <- Policy B의 state
 
@@ -257,6 +257,7 @@ class CarEnv(gym.Env):
             traj_before_rotate = np.array([self.car.carx + idx * 3, self.car.cary])
             traj.append(rotate(traj_before_rotate[0], traj_before_rotate[1]))
         return traj
+
 
     def calculate_dev(self):
         arr = np.array(self.traj_data)
