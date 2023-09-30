@@ -1,0 +1,13 @@
+1. state
+ 1) 만들어진 trajectory
+ 2) 차량의 devDist, devAng
+ 3) 내 위치상 가장 가까운 cone 2개
+
+2. reward
+ 1) 차량의 reward
+ 2) 이론상 최소경로인데(최소 시간), sparse reward가 생겨서 어떻게 해야할지 모르겠음.
+
+3. 
+
+[env별 설명]
+evn2: state에서 dev 빼버림.
