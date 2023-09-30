@@ -363,5 +363,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Learning interrupted. Will save the model now.")
     finally:
-        model.save("models/model_c.pkl")
+        model.save("models/blevel/model_y.pkl")
         print("Model saved")
