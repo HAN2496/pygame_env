@@ -180,7 +180,7 @@ class LowLevelEnv(gym.Env):
         self.road = Road()
 
         env_action_num = 1
-        env_obs_num = 13
+        env_obs_num = 11
         self.action_space = spaces.Box(low=-1, high=1, shape=(env_action_num,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(env_obs_num,), dtype=np.float32)
 
