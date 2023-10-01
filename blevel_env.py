@@ -185,7 +185,7 @@ class CarEnv(gym.Env):
 
         env_action_num = 3
         env_obs_num = 14
-        self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(env_action_num,), dtype=np.float32)
+        self.action_space = spaces.Box(low=-1., high=1., shape=(env_action_num,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(env_obs_num,), dtype=np.float32)
 
         low_level_env = LowLevelEnv()
@@ -237,7 +237,7 @@ class CarEnv(gym.Env):
         info = {"carx": self.car.carx, "cary": self.car.cary, "caryaw": self.car.caryaw}
 
         if self.test_num % 10 ==0:
-            print(f"[reward: {round(reward, 2)}] [cone_state: {cone_state}] [traj_rel_x: {traj_rel[::2]}]")
+            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [car_dev : {round(car_dev[0], 2), round(car_dev[1], 2)}]")
 
         self.time += 0.01
         self.car_dev_before = car_dev
@@ -258,7 +258,7 @@ class CarEnv(gym.Env):
             return (x_new, y_new)
         traj_arr = []
         for idx, angle in enumerate(action):
-            traj = np.array([self.car.carx + idx * 3, self.car.cary])
+            traj = np.array([self.car.carx + (idx + 1) * 3, self.car.cary])
             traj_arr.append(rotate(traj[0], traj[1], angle))
 
         traj_interpolated1 = np.array([(traj_arr[0][0] + traj_arr[1][0]) / 2, (traj_arr[0][1] + traj_arr[1][1]) / 2])
@@ -363,5 +363,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Learning interrupted. Will save the model now.")
     finally:
-        model.save("models/blevel/model_y.pkl")
+        model.save("models/blevel/model_l.pkl")
         print("Model saved")
