@@ -331,5 +331,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("Learning interrupted. Will save the model now.")
     finally:
-        model.save("models/model.pkl")
+        model.save("models/model_env2.pkl")
         print("Model saved")
