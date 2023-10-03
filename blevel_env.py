@@ -241,7 +241,7 @@ class CarEnv(gym.Env):
 
         if self.test_num % 100 == 0:
 #            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [Car pos : {round(self.car.carx, 2), round(self.car.cary, 2)}]")
-            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [Car dev : {round(car_dev[0], 2), round(car_dev[1], 2)}]")
+            print(f"[Time: {round(self.time, 2)}] [reward: {round(reward, 2)}] [Car dev : {round(car_dev[0], 2), round(car_dev[1], 2)}]")
 
         self.time += 0.01
         self.car_dev_before = car_dev
@@ -260,6 +260,7 @@ class CarEnv(gym.Env):
             x_new += self.car.carx
             y_new += self.car.cary
             return (x_new, y_new)
+
         traj_arr = []
         for idx, angle in enumerate(action):
             traj = np.array([self.car.carx + idx * 3, self.car.cary])
@@ -292,8 +293,6 @@ class CarEnv(gym.Env):
             forbidden_reward = -10000
         if self.road.is_car_colliding_with_cones(self.car):
             collision_reward = -1000
-        dist_reward = - abs(state[0]) * 1000
-        ang_reward = - abs(state[1]) * 5000
 
         e = forbidden_reward + collision_reward + dist_reward + ang_reward
         return e
@@ -326,7 +325,6 @@ class CarEnv(gym.Env):
         for trajx, trajy in self.traj_before:
             pygame.draw.circle(self.screen, (0, 128, 0), (trajx * 10, - trajy * 10), 5)
 
-        # Create a Surface for the car.
         car_color = (255, 0, 0)
 
         half_length = self.car.length * 10 / 2.0
@@ -339,15 +337,25 @@ class CarEnv(gym.Env):
             (half_length, -half_width)
         ]
 
-        # Rotate the car corners
         rotated_corners = []
         for x, y in corners:
             x_rot = x * np.cos(-self.car.caryaw) - y * np.sin(-self.car.caryaw) + self.car.carx * 10
             y_rot = x * np.sin(-self.car.caryaw) + y * np.cos(-self.car.caryaw) - self.car.cary * 10
             rotated_corners.append((x_rot, y_rot))
 
-        # Draw the car on the main screen using the rotated corners
         pygame.draw.polygon(self.screen, car_color, rotated_corners)
+
+        #차량 위치 렌더링
+        font = pygame.font.SysFont("arial", 20, True, True)
+        text_str = f"X: {round(self.car.carx, 1)}, Y: {round(self.car.cary, 1)}"
+        text_surface = font.render(text_str, True, (255, 255, 255))
+
+        # 텍스트 이미지의 위치 계산 (우측 하단)
+        text_x = self.road.road_length * 10 - text_surface.get_width() - 10
+        text_y = - self.road.road_width * 10 - text_surface.get_height() - 10
+
+        # 렌더링된 이미지를 화면에 그리기
+        self.screen.blit(text_surface, (text_x, text_y))
 
         pygame.display.flip()
 
