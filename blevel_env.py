@@ -5,12 +5,11 @@ from stable_baselines3 import PPO, SAC
 import pygame
 from shapely.geometry import Polygon, Point, LineString
 from shapely import affinity
-import pandas as pd
 import matplotlib.pyplot as plt
 import os
-from lowlevel_env import LowLevelEnv
 import math
 from scipy.interpolate import interp1d
+from lowlevel_env2 import LowLevelEnv
 
 def plot(road, car):
     #plt.figure(figsize=(10, 5))
@@ -189,7 +188,7 @@ class CarEnv(gym.Env):
         self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(env_obs_num,), dtype=np.float32)
 
         low_level_env = LowLevelEnv()
-        self.low_level_model = SAC.load("models/model1.pkl", env=low_level_env)
+        self.low_level_model = SAC.load("models/model_env2.pkl", env=low_level_env)
         self.low_level_obs = low_level_env.reset()
 
         self.car_dev_before = np.array([0, 0])
@@ -220,7 +219,7 @@ class CarEnv(gym.Env):
         self.test_num += 1
 
         traj_lowlevel_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, self.traj_before).flatten()
-        self.low_level_obs = np.concatenate((np.array([self.car.carv]), self.car_dev_before, traj_lowlevel_rel))
+        self.low_level_obs = np.concatenate((np.array([self.car.carv]), traj_lowlevel_rel))
         steering_changes = self.low_level_model.predict(self.low_level_obs)
 
         self.car.move_car(steering_changes[0])

@@ -5,7 +5,7 @@
 3. 테스트를 수행한다.
 """
 
-from lowlevel_env import LowLevelEnv
+from lowlevel_env2 import LowLevelEnv
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,12 +14,12 @@ from stable_baselines3 import SAC
 if __name__ == '__main__':
     road_type = "DLC"
     data_name = 'LowLevel'
-    comment = "myEnv"
+    comment = "myEnv2"
     prefix = data_name + comment
 
 
     env = LowLevelEnv()
-    model = SAC.load("models/model.pkl", env=env)
+    model = SAC.load("models/model_env2.pkl", env=env)
     print("Model loaded.")
 
     obs = env.reset()
