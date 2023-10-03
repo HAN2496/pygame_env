@@ -230,7 +230,7 @@ class CarEnv(gym.Env):
         traj_abs = self.make_trajectory(action)
         self.traj_data = np.vstack((self.traj_data, traj_abs))
         traj_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, traj_abs).flatten()
-        car_dev = self.calculate_dev(self.traj_before)
+        car_dev = self.calculate_dev()
         cone_state = self.road.cones_arr[self.road.cones_arr[:, 0] > self.car.carx][:2].flatten()
         state = np.concatenate((traj_rel, cone_state)) # <- Policy B의 state
 
@@ -271,7 +271,7 @@ class CarEnv(gym.Env):
         traj_arr = np.insert(traj_arr, 3, traj_interpolated2, axis=0)
         return traj_arr
 
-    def calculate_dev(self, traj):
+    def calculate_dev(self):
         f = interp1d(self.traj_data[:, 0], self.traj_data[:, 1])
         xnew = np.arange(self.traj_data[0][0], self.traj_data[-1][0], 0.01)
         ynew = f(xnew)
@@ -287,14 +287,15 @@ class CarEnv(gym.Env):
         return devDist, devAng
 
     def getReward(self, state):
+        forbidden_reward, collision_reward, dist_reward, ang_reward = 0, 0, 0, 0
         if self.road.is_car_in_forbidden_area(self.car):
             forbidden_reward = -10000
-        else:
-            forbidden_reward = 0
+        if self.road.is_car_colliding_with_cones(self.car):
+            collision_reward = -1000
         dist_reward = - abs(state[0]) * 1000
         ang_reward = - abs(state[1]) * 5000
 
-        e = forbidden_reward + dist_reward + ang_reward
+        e = forbidden_reward + collision_reward + dist_reward + ang_reward
         return e
 
     def to_relative_coordinates(self, carx, cary, caryaw, arr):
