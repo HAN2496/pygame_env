@@ -202,6 +202,7 @@ class CarEnv(gym.Env):
         self.traj_data = np.array([3, -8.0525])
 
     def _initial_state(self):
+        self.traj_data = np.array([3, -8.0525])
         self.time = 0
         self.car.reset_car()
         return np.zeros(self.observation_space.shape)

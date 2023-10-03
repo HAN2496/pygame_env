@@ -170,11 +170,12 @@ class Car:
         return car_shape
 
 class LowLevelEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, inheritance=False):
         super(LowLevelEnv, self).__init__()
         self.reset_num = 0
         self.time = 0
         self.test_num = 0
+        self.inheritance = inheritance
 
         self.car = Car()
         self.road = Road()
