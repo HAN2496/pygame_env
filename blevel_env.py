@@ -10,6 +10,7 @@ import os
 import math
 from scipy.interpolate import interp1d
 from lowlevel_env2 import LowLevelEnv
+import time
 
 def plot(road, car):
     #plt.figure(figsize=(10, 5))
@@ -198,6 +199,8 @@ class CarEnv(gym.Env):
         self.screen = pygame.display.set_mode((self.road.road_length * 10, - self.road.road_width * 10))
         pygame.display.set_caption("B level Environment")
 
+        self.traj_data = np.array([3, -8.0525])
+
     def _initial_state(self):
         self.time = 0
         self.car.reset_car()
@@ -225,6 +228,7 @@ class CarEnv(gym.Env):
         self.car.move_car(steering_changes[0])
 
         traj_abs = self.make_trajectory(action)
+        self.traj_data = np.vstack((self.traj_data, traj_abs))
         traj_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, traj_abs).flatten()
         car_dev = self.calculate_dev(self.traj_before)
         cone_state = self.road.cones_arr[self.road.cones_arr[:, 0] > self.car.carx][:2].flatten()
@@ -235,8 +239,9 @@ class CarEnv(gym.Env):
         reward = self.getReward(car_dev)
         info = {"carx": self.car.carx, "cary": self.car.cary, "caryaw": self.car.caryaw}
 
-        if self.test_num % 10 ==0:
-            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [car_dev : {round(car_dev[0], 2), round(car_dev[1], 2)}]")
+        if self.test_num % 100 == 0:
+#            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [Car pos : {round(self.car.carx, 2), round(self.car.cary, 2)}]")
+            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [Car dev : {round(car_dev[0], 2), round(car_dev[1], 2)}]")
 
         self.time += 0.01
         self.car_dev_before = car_dev
@@ -257,7 +262,7 @@ class CarEnv(gym.Env):
             return (x_new, y_new)
         traj_arr = []
         for idx, angle in enumerate(action):
-            traj = np.array([self.car.carx + (idx + 1) * 3, self.car.cary])
+            traj = np.array([self.car.carx + idx * 3, self.car.cary])
             traj_arr.append(rotate(traj[0], traj[1], angle))
 
         traj_interpolated1 = np.array([(traj_arr[0][0] + traj_arr[1][0]) / 2, (traj_arr[0][1] + traj_arr[1][1]) / 2])
@@ -267,8 +272,8 @@ class CarEnv(gym.Env):
         return traj_arr
 
     def calculate_dev(self, traj):
-        f = interp1d(traj[:, 0], traj[:, 1])
-        xnew = np.arange(traj[0][0], traj[-1][0], 0.01)
+        f = interp1d(self.traj_data[:, 0], self.traj_data[:, 1])
+        xnew = np.arange(self.traj_data[0][0], self.traj_data[-1][0], 0.01)
         ynew = f(xnew)
         arr = np.array(list(zip(xnew, ynew)))
         distances = np.sqrt(np.sum((arr - [self.car.carx, self.car.cary]) ** 2, axis=1))
@@ -356,11 +361,10 @@ if __name__ == "__main__":
     print(traj_rel)
     print(f"dst: {devdist}, ang: {devAng}")
     """
-    model = SAC("MlpPolicy", env, tensorboard_log=os.path.join(f"tensorboard/dlc"), verbose=1)
+    model = SAC("MlpPolicy", env, verbose=1)
     try:
         model.learn(total_timesteps=10000 * 300)
     except KeyboardInterrupt:
         print("Learning interrupted. Will save the model now.")
     finally:
-        model.save("models/blevel/model_l.pkl")
-        print("Model saved")
+        print("Env test Finished.")
