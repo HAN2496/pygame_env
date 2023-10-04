@@ -193,20 +193,20 @@ class CarEnv(gym.Env):
         self.low_level_obs = low_level_env.reset()
 
         self.car_dev_before = np.array([0, 0])
-        self.traj_before = np.array([[3 * i, -8.0525] for i in range(5)])
+        self.traj_data = np.array([[3, -8.0525], [15, -8.0525]])
+        self.traj_data = self.make_trajectory()
+        self.traj_point = self.find_nearest_point(self.car.carx, self.car.cary, [3*i for i in range(5)])
 
         pygame.init()
         self.screen = pygame.display.set_mode((self.road.road_length * 10, - self.road.road_width * 10))
         pygame.display.set_caption("B level Environment")
 
-        self.traj_data = np.array([[3, -8.0525], [15, -8.0525]])
-        self.traj_data = self.interpolate_trajectory(self.traj_data)
 
     def _initial_state(self):
-        self.traj_data = np.array([[3, -8.0525], [15, -8.0525]])
-        self.traj_data = self.interpolate_trajectory(self.traj_data)
         self.time = 0
         self.car.reset_car()
+        self.traj_data = np.array([[3, -8.0525], [15, -8.0525]])
+        self.traj_data = self.make_trajectory()
         return np.zeros(self.observation_space.shape)
 
     def reset(self):
@@ -223,14 +223,18 @@ class CarEnv(gym.Env):
         # low_level_obs에 cary, carv 들어가고, car_dev랑 lookahead는 action(신규)에서 가져온 trj 정보로
         done = False
         self.test_num += 1
+        sight = np.array([3 * i for i in range(5)])
 
-        traj_lowlevel_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, self.traj_before).flatten()
+        traj_lowlevel_abs = self.find_nearest_point(self.car.carx, self.car.cary, sight)
+        traj_lowlevel_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, traj_lowlevel_abs).flatten()
         self.low_level_obs = np.concatenate((np.array([self.car.carv]), traj_lowlevel_rel))
         steering_changes = self.low_level_model.predict(self.low_level_obs)
 
         self.car.move_car(steering_changes[0])
 
-        traj_abs = self.make_trajectory(action)
+        self.traj_data = self.make_trajectory(action[0])
+        traj_abs = self.find_nearest_point(self.car.carx, self.car.cary, sight)
+        self.traj_point = traj_abs
         traj_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, traj_abs).flatten()
         car_dev = self.calculate_dev()
         cone_state = self.road.cones_arr[self.road.cones_arr[:, 0] > self.car.carx][:2].flatten()
@@ -241,44 +245,37 @@ class CarEnv(gym.Env):
         reward = self.getReward(car_dev)
         info = {"carx": self.car.carx, "cary": self.car.cary, "caryaw": self.car.caryaw}
 
-        if self.test_num % 100 == 3:
+        if self.test_num % 1 == 0:
 #            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [Car pos : {round(self.car.carx, 2), round(self.car.cary, 2)}]")
             print(f"[Time: {round(self.time, 2)}] [reward: {round(reward, 2)}] [Car dev : {round(car_dev[0], 2), round(car_dev[1], 2)}]")
-            print(f"Trajectory: \n {self.traj_data}")
+            print(f"Trajectory: \n {self.traj_data[-10:]}")
 
         self.time += 0.01
         self.car_dev_before = car_dev
         self.traj_before = traj_abs
 
         self.render()
-        time.sleep(10)
+        time.sleep(1)
 
         return state, reward, done, info
 
-    def interpolate_trajectory(self, arr):
-        f = interp1d(arr[:, 0], arr[:, 1])
-        xnew = np.arange(arr[-2][0], arr[-1][0], 0.01)
-        ynew = f(xnew)
-        interpolate_arr = np.array(list(zip(xnew, ynew)))
-        return interpolate_arr
+    def make_trajectory(self, action=0):
+        arr = self.traj_data.copy()
 
-    def make_trajectory(self, action):
-        def rotate(x1, y1, angle):
-            print(angle)
-            x1 -= self.car.carx
-            y1 -= self.car.cary
-            x_new = x1 * math.cos(angle) - y1 * math.sin(angle)
-            y_new = x1 * math.sin(angle) + y1 * math.cos(angle)
-            x_new += self.car.carx
-            y_new += self.car.cary
-            return (x_new, y_new)
+        if action != 0:
+            new_traj_point = np.array([self.car.carx + 12, self.car.cary + action * 5])
+            print(f"new traj point: {new_traj_point}")
+            arr = np.vstack((arr, new_traj_point))
 
-        traj_arr = []
-        traj = np.array([self.car.carx + 12, self.car.cary])
-        traj_arr.append(rotate(traj[0], traj[1], action[0]))
-        self.traj_data = np.vstack((self.traj_data, traj_arr))
-        self.traj_data = self.make_trajectory(self.traj_data)
-        return self.find_nearest_point(self.car.carx, self.car.cary, [3 * i for i in range(5)])
+        if abs(arr[-2][0] - arr[-1][0]) > 0.01:
+            f = interp1d(arr[-2:, 0], arr[-2:, 1])
+            xnew = np.arange(arr[-2][0], arr[-1][0], 0.01)
+            ynew = f(xnew)
+            interpolate_arr = np.column_stack((xnew, ynew))
+            new_arr = np.vstack((arr[:-1], interpolate_arr, arr[-1]))
+            return new_arr
+        else:
+            return arr
 
     def find_nearest_point(self, x0, y0, distances):
         points = []
@@ -339,7 +336,7 @@ class CarEnv(gym.Env):
             x, y = cone.centroid.coords[0]
             pygame.draw.circle(self.screen, (255, 140, 0), (int(x * 10), int(-y * 10)), 5)
 
-        for trajx, trajy in self.traj_before:
+        for trajx, trajy in self.traj_point:
             pygame.draw.circle(self.screen, (0, 128, 0), (trajx * 10, - trajy * 10), 5)
 
         car_color = (255, 0, 0)
@@ -391,6 +388,6 @@ if __name__ == "__main__":
     try:
         model.learn(total_timesteps=10000 * 300)
     except KeyboardInterrupt:
-        print("Learning interrupted. Will save the model now.")
+        print("Learning interrupted.")
     finally:
         print("Env test Finished.")

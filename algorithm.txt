@@ -13,3 +13,16 @@
 evn2: state에서 dev 빼버림. -> 됨.
 
 [b level env별 설명]
+
+
+이미 결정되어 있는 trajectory를 기준으로 devDist, devAng을 계산하는게 문제다.
+일단 trajectory를 바꾸자.
+1. 0, 3, 6, 9, 12 지점에 있는 trajectory를 생성하여 state로 넘겨줌.
+2. 만약 이미 해당 trajectory data가 존재한다면, 
+결국 목적은 내가 직접 cone의 위치를 보고 trajectory를 생성해서 앞으로 나아가는 것임.
+일종의 끌려서 앞으로 나아가야 하는건데, 문제는 계속해서 action을 하는게 의미가 있냐는 것이다.
+현재는
+
+-> 그냥 12 지점에 있는 데이터만 만들고, 0, 3, 6, 9
+0. 초기화: 3, 15 지점 데이터를 만들고 0.01 단위로 interpolate한 배열 제작
+1. action

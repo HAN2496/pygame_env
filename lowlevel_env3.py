@@ -210,6 +210,7 @@ class LowLevelEnv(gym.Env):
 
         steering_changes = action
         self.car.move_car(steering_changes[0])
+
         lookahead_arr = [3 * i for i in range(5)]
         lookahead_traj_abs = self.find_lookahead_traj(self.car.carx, self.car.cary, lookahead_arr)
         lookahead_traj_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, lookahead_traj_abs).flatten()
@@ -218,6 +219,7 @@ class LowLevelEnv(gym.Env):
 
         if self.road.is_car_in_road(self.car) == 1:
             done = True
+
         reward = self.getReward(car_dev)
         info = {"carx": self.car.carx, "cary": self.car.cary, "caryaw": self.car.caryaw}
 
