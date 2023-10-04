@@ -258,7 +258,7 @@ class LowLevelEnv(gym.Env):
         distances = np.array(distances)
         result_points = []
 
-        total_distances = np.sqrt(np.sum((self.traj_data - np.array([x, y])) ** 2, axis=1))
+        total_distances = np.sqrt(np.sum((self.traj_data - np.array([x, y])), axis=1))
 
         for dist in distances:
             idx = np.argmin(np.abs(total_distances - dist))

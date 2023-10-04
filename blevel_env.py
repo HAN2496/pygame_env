@@ -184,7 +184,7 @@ class CarEnv(gym.Env):
         self.road = Road()
 
         env_action_num = 1
-        env_obs_num = 14
+        env_obs_num = 20
         self.action_space = spaces.Box(low=-1., high=1., shape=(env_action_num,), dtype=np.float32)
         self.observation_space = spaces.Box(low=-1.0, high=1.0, shape=(env_obs_num,), dtype=np.float32)
 
@@ -237,8 +237,9 @@ class CarEnv(gym.Env):
         self.traj_point = traj_abs
         traj_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, traj_abs).flatten()
         car_dev = self.calculate_dev()
-        cone_state = self.road.cones_arr[self.road.cones_arr[:, 0] > self.car.carx][:2].flatten()
-        state = np.concatenate((traj_rel, cone_state)) # <- Policy B의 state
+        cones_state = self.road.cones_arr[self.road.cones_arr[:, 0] > self.car.carx][:5]
+        cones_rel = self.to_relative_coordinates(self.car.carx, self.car.cary, self.car.caryaw, cones_state).flatten()
+        state = np.concatenate((traj_rel, cones_rel)) # <- Policy B의 state
 
         if self.road.is_car_in_road(self.car) == 1:
             done = True
@@ -246,11 +247,7 @@ class CarEnv(gym.Env):
         info = {"carx": self.car.carx, "cary": self.car.cary, "caryaw": self.car.caryaw}
 
         if self.test_num % 300 == 0:
-#            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [Car pos : {round(self.car.carx, 2), round(self.car.cary, 2)}]")
-            print(f"[Time: {round(self.time, 2)}] [reward: {round(reward, 2)}] [Car dev : {round(car_dev[0], 2), round(car_dev[1], 2)}]")
-            print("Trajectory:")
-            for point in self.traj_point:
-                print(f" [{point[0]:.2f}, {point[1]:.2f}]")
+            self.print_result(reward, car_dev)
 
         self.time += 0.01
         self.car_dev_before = car_dev
@@ -259,6 +256,14 @@ class CarEnv(gym.Env):
         self.render()
 
         return state, reward, done, info
+
+    def print_result(self, reward, car_dev):
+        print("-" * 50)
+        print(
+            f"[Time: {round(self.time, 2)}] [Reward: {round(reward, 2)}] [Car dev: {round(car_dev[0], 2), round(car_dev[1], 2)}]")
+        print("Trajectory:")
+        for point in self.traj_point:
+            print(f" [{point[0]:.2f}, {point[1]:.2f}]")
 
     def make_trajectory(self, action=0):
         arr = self.traj_data.copy()
@@ -281,9 +286,8 @@ class CarEnv(gym.Env):
         points = []
         for distance in distances:
             filtered_data = self.traj_data[self.traj_data[:, 0] > x0]
-            dist = np.sqrt((filtered_data[:, 0] - x0) ** 2 + (filtered_data[:, 1] - y0) ** 2)
-            diff = np.abs(dist - distance)
-            nearest_idx = np.argmin(diff)
+            x_diff = np.abs(filtered_data[:, 0] - (x0 + distance))
+            nearest_idx = np.argmin(x_diff)
             points.append(filtered_data[nearest_idx])
         return points
 
