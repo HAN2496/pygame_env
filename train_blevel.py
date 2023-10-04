@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from stable_baselines3 import SAC
+import os
 
 if __name__ == '__main__':
     road_type = "DLC"
