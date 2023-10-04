@@ -245,7 +245,7 @@ class CarEnv(gym.Env):
         reward = self.getReward(car_dev)
         info = {"carx": self.car.carx, "cary": self.car.cary, "caryaw": self.car.caryaw}
 
-        if self.test_num % 1 == 0:
+        if self.test_num % 300 == 0:
 #            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [Car pos : {round(self.car.carx, 2), round(self.car.cary, 2)}]")
             print(f"[Time: {round(self.time, 2)}] [reward: {round(reward, 2)}] [Car dev : {round(car_dev[0], 2), round(car_dev[1], 2)}]")
             print(f"Trajectory: \n {self.traj_data[-10:]}")
@@ -255,7 +255,6 @@ class CarEnv(gym.Env):
         self.traj_before = traj_abs
 
         self.render()
-        time.sleep(1)
 
         return state, reward, done, info
 
@@ -264,7 +263,6 @@ class CarEnv(gym.Env):
 
         if action != 0:
             new_traj_point = np.array([self.car.carx + 12, self.car.cary + action * 5])
-            print(f"new traj point: {new_traj_point}")
             arr = np.vstack((arr, new_traj_point))
 
         if abs(arr[-2][0] - arr[-1][0]) > 0.01:
