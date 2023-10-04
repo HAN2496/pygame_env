@@ -248,7 +248,9 @@ class CarEnv(gym.Env):
         if self.test_num % 300 == 0:
 #            print(f"[Time: {self.time}] [reward: {round(reward, 2)}] [Car pos : {round(self.car.carx, 2), round(self.car.cary, 2)}]")
             print(f"[Time: {round(self.time, 2)}] [reward: {round(reward, 2)}] [Car dev : {round(car_dev[0], 2), round(car_dev[1], 2)}]")
-            print(f"Trajectory: \n {self.traj_data[-10:]}")
+            print("Trajectory:")
+            for point in self.traj_point:
+                print(f" [{point[0]:.2f}, {point[1]:.2f}]")
 
         self.time += 0.01
         self.car_dev_before = car_dev
@@ -278,10 +280,11 @@ class CarEnv(gym.Env):
     def find_nearest_point(self, x0, y0, distances):
         points = []
         for distance in distances:
-            dist = np.sqrt((self.traj_data[:, 0] - x0) ** 2 + (self.traj_data[:, 1] - y0) ** 2)
+            filtered_data = self.traj_data[self.traj_data[:, 0] > x0]
+            dist = np.sqrt((filtered_data[:, 0] - x0) ** 2 + (filtered_data[:, 1] - y0) ** 2)
             diff = np.abs(dist - distance)
             nearest_idx = np.argmin(diff)
-            points.append(self.traj_data[nearest_idx])
+            points.append(filtered_data[nearest_idx])
         return points
 
     def calculate_dev(self):
