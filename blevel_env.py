@@ -16,8 +16,9 @@ def plot(road, car):
     #plt.figure(figsize=(10, 5))
 
     # Plot forbidden areas
-    plt.plot(*road.forbbiden_area1.exterior.xy, label="Forbidden Area 1", color='red')
-    plt.plot(*road.forbbiden_area2.exterior.xy, label="Forbidden Area 2", color='blue')
+    plt.plot(*road.cones_boundary.exterior.xy, label="Cone Boundary", color='red')
+#    plt.plot(*road.forbbiden_area1.exterior.xy, label="Forbidden Area 1", color='red')
+#    plt.plot(*road.forbbiden_area2.exterior.xy, label="Forbidden Area 2", color='blue')
     plt.plot(*road.road_boundary.exterior.xy, label="ROAD BOUNDARY", color='green')
 
     # Plot cones
@@ -232,6 +233,7 @@ class CarEnv(gym.Env):
 
         self.car.move_car(steering_changes[0])
 
+        new_traj_point = self.make_traj_point(action[0])
         self.traj_data = self.make_trajectory(action[0])
         traj_abs = self.find_nearest_point(self.car.carx, self.car.cary, sight)
         self.traj_point = traj_abs
@@ -243,7 +245,7 @@ class CarEnv(gym.Env):
 
         if self.road.is_car_in_road(self.car) == 1:
             done = True
-        reward = self.getReward(car_dev)
+        reward = self.getReward(car_dev, new_traj_point)
         info = {"carx": self.car.carx, "cary": self.car.cary, "caryaw": self.car.caryaw}
 
         if self.test_num % 300 == 0:
@@ -257,19 +259,15 @@ class CarEnv(gym.Env):
 
         return state, reward, done, info
 
-    def print_result(self, reward, car_dev):
-        print("-" * 50)
-        print(
-            f"[Time: {round(self.time, 2)}] [Reward: {round(reward, 2)}] [Car dev: {round(car_dev[0], 2), round(car_dev[1], 2)}]")
-        print("Trajectory:")
-        for point in self.traj_point:
-            print(f" [{point[0]:.2f}, {point[1]:.2f}]")
+    def make_traj_point(self, action):
+        new_traj_point = np.array([self.car.carx + 12, self.car.cary + action * 3])
+        return new_traj_point
 
     def make_trajectory(self, action=0):
         arr = self.traj_data.copy()
 
         if action != 0:
-            new_traj_point = np.array([self.car.carx + 12, self.car.cary + action * 5])
+            new_traj_point = self.make_traj_point(action)
             arr = np.vstack((arr, new_traj_point))
 
         if abs(arr[-2][0] - arr[-1][0]) > 0.01:
@@ -306,14 +304,17 @@ class CarEnv(gym.Env):
         devAng = - devAng2 - self.car.caryaw
         return devDist, devAng
 
-    def getReward(self, state):
-        forbidden_reward, collision_reward, dist_reward, ang_reward = 0, 0, 0, 0
-        if self.road.is_car_in_forbidden_area(self.car):
+    def getReward(self, dev, new_traj_point):
+        forbidden_reward, cones_reward, car_reward, ang_reward = 0, 0, 0, 0
+        traj_point = Point(new_traj_point[0], new_traj_point[1])
+        if self.road.forbbiden_area1.intersects(traj_point) or self.road.forbbiden_area2.intersects(traj_point):
             forbidden_reward = -10000
-        if self.road.is_car_colliding_with_cones(self.car):
-            collision_reward = -1000
+        if self.road.cones_boundary.intersects(traj_point):
+            cones_reward = +100
+        if self.road.is_car_in_forbidden_area(self.car):
+            car_reward = -10000
 
-        e = forbidden_reward + collision_reward + dist_reward + ang_reward
+        e = forbidden_reward + cones_reward + car_reward + ang_reward
         return e
 
     def to_relative_coordinates(self, carx, cary, caryaw, arr):
@@ -379,8 +380,17 @@ class CarEnv(gym.Env):
         pygame.display.flip()
 
 
+    def print_result(self, reward, car_dev):
+        print("-" * 50)
+        print(
+            f"[Time: {round(self.time, 2)}] [Reward: {round(reward, 2)}] [Car dev: {round(car_dev[0], 2), round(car_dev[1], 2)}]")
+        print("[Trajectory: ]")
+        for point in self.traj_point:
+            print(f" [{point[0]:.2f}, {point[1]:.2f}]")
+
 if __name__ == "__main__":
     env = CarEnv()
+#    plot(env.road, env.car)
     """
     env.car.carx, env.car.cary, env.car.caryaw = 68, -5.0525, 0
     traj_abs = env.find_lookahead_traj(env.car.carx, env.car.cary, [3 * i for i in range(5)])
@@ -389,7 +399,7 @@ if __name__ == "__main__":
     print(traj_rel)
     print(f"dst: {devdist}, ang: {devAng}")
     """
-    model = SAC("MlpPolicy", env, verbose=1)
+    model = SAC("MlpPolicy", env, verbose=0)
     try:
         model.learn(total_timesteps=10000 * 300)
     except KeyboardInterrupt:
